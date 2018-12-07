@@ -14,7 +14,6 @@
             height: 50,
             data: new Uint8Array(100 * 50)
         };
-        tileArray.data[3 * 100 + 4] = 1;
 
         // initialize drawing resources to some default in case we get premature draw operations
         drawResources = {
@@ -85,6 +84,63 @@
                     canvas.height = $container.height();
                 });
                 map.render();
+
+                // update processing
+                processMapUpdate = function(update) {
+                    switch (update.type || 'unknown') {
+                        
+                        case 'replace':
+                            tileArray = {
+                                x: update.x,
+                                y: update.y,
+                                width: update.width,
+                                height: update.height,
+                                data: update.data
+                            };
+                            break;
+
+                        case 'patch':
+                            for (var i in update.entries) {
+                                var entry = update.entries[i];
+                                tileArray.data[entry.y * tileArray.width + entry.x] = entry.tile;
+                            }
+                            break;
+
+                    }
+                    map.render();
+                };
+                setInterval(function() {
+                    processMapUpdate({
+                        type: 'patch',
+                        entries: [
+                            {
+                                x: Math.floor(Math.random() * tileArray.width),
+                                y: Math.floor(Math.random() * tileArray.height),
+                                tile: 1
+                            },
+                            {
+                                x: Math.floor(Math.random() * tileArray.width),
+                                y: Math.floor(Math.random() * tileArray.height),
+                                tile: 1
+                            },
+                            {
+                                x: Math.floor(Math.random() * tileArray.width),
+                                y: Math.floor(Math.random() * tileArray.height),
+                                tile: 0
+                            }
+                        ]
+                    });
+                }, 100);
+                setTimeout(function() {
+                    processMapUpdate({
+                        type: 'replace',
+                        x: 0,
+                        y: 0,
+                        width: 100,
+                        height: 50,
+                        data: new Uint8Array(100 * 50)
+                    });
+                }, 5000);
 
             }, 0);
         });

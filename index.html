@@ -1,0 +1,96 @@
+<html>
+<head>
+    <script type="text/javascript" src="jquery-3.3.1.js"></script>
+    <script type="text/javascript" src="jquery.mousewheel.js"></script>
+    <script type="text/javascript" src="general.js"></script>
+    <script type="text/javascript" src="AwesomeMap.js"></script>
+    <script type="text/javascript">
+        
+        // prepare map data
+        tileArray = {
+            x: 0,
+            y: 0,
+            width: 100,
+            height: 50,
+            data: new Uint8Array(100 * 50)
+        };
+        tileArray.data[3 * 100 + 4] = 1;
+
+        // initialize drawing resources to some default in case we get premature draw operations
+        drawResources = {
+            background: '#8080ff',
+            tiles: [
+                '#000000',
+                '#000000'
+            ]
+        };
+
+        $(function() {
+            setTimeout(function() {
+
+                // prepare canvas
+                canvas = $('#map')[0];
+                canvasContext = canvas.getContext('2d');
+
+                // prepare drawing resources
+                function loadImage(url) {
+                    var image = new Image();
+                    image.src = url;
+                    return image;
+                }
+                drawResources.background = canvasContext.createLinearGradient(0, -1000, 0, 1000);
+                drawResources.background.addColorStop(0, '#000080');
+                drawResources.background.addColorStop(0.2, '#0000ff');
+                drawResources.background.addColorStop(0.5, '#8080ff');
+                drawResources.background.addColorStop(0.5, '#402010');
+                drawResources.background.addColorStop(1.0, '#100804');
+                drawResources.tiles[0] = loadImage('empty.png');
+                drawResources.tiles[1] = loadImage('dirt.png');
+
+                // create plain map object
+                map = new AwesomeMap.Map(canvas);
+                map.viewport.mapOriginX = canvas.width / 2; // TODO doesn't work correctly
+                map.viewport.mapOriginY = canvas.height / 2;
+
+                // background layer
+                backgroundLayer = {
+                    render: function(context, viewport) {
+                        var topLeft = viewport.untransformPoint({x: 0, y: 0});
+                        var bottomRight = viewport.untransformPoint({x: context.canvas.width, y: context.canvas.height});
+                        context.fillStyle = drawResources.background;
+                        context.fillRect(topLeft.x, topLeft.y, bottomRight.x - topLeft.x, bottomRight.y - topLeft.y);
+                    }
+                };
+
+                // tile layer
+                tileLayer = {
+                    render: function(context, viewport) {
+                        for (var dx = 0; dx < tileArray.width; dx++) {
+                            for (var dy = 0; dy < tileArray.height; dy++) {
+                                var tile = tileArray.data[dy * tileArray.width + dx];
+                                if (tile >= 0 && tile < drawResources.tiles.length) {
+                                    var texture = drawResources.tiles[tile];
+                                    context.drawImage(texture, tileArray.x + dx, tileArray.y + dy, 1, 1);
+                                }
+                            }
+                        }
+                    }
+                };
+
+                // initialize map
+                map.layers = [backgroundLayer, tileLayer];
+                map.installResizer(function(canvas) {
+                    var $container = $(canvas).parent();
+                    canvas.width = $container.width();
+                    canvas.height = $container.height();
+                });
+                map.render();
+
+            }, 0);
+        });
+    </script>
+</wicket:head>
+<body>
+    <canvas id="map" style="display: block; margin: 0px; padding: 0px; z-index: 0; "></canvas>
+</body>
+</html>
